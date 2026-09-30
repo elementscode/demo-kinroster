@@ -1,0 +1,135 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import { signin } from "#app/shared/services/auth";
+import { Avatar } from "#app/shared/templates/layout";
+import { firstName } from "#app/shared/lib/members";
+
+/** The development seed's logins, shown so anyone can walk in as a Park. */
+export const DEMO_EMAILS = ["maya@example.com", "sam@example.com", "leo@example.com", "ivy@example.com"];
+
+export const DEMO_PASSWORD = "kinroster";
+
+const ROLES: Record<string, string> = {
+  "maya@example.com": "Parent",
+  "sam@example.com": "Parent",
+  "leo@example.com": "Kid, 12",
+  "ivy@example.com": "Kid, 9",
+};
+
+export interface DemoLogin {
+  name: string;
+  email: string;
+  color: string;
+  householdName: string;
+}
+
+interface SigninForm {
+  email: string;
+  password: string;
+  error: string;
+  busy: boolean;
+}
+
+function onSubmit(form: SigninForm) {
+  form.busy = true;
+
+  try {
+    signin(form.email, form.password);
+    form.error = "";
+    redirect("/lists");
+  } catch (err: any) {
+    form.error = err.message;
+    form.busy = false;
+  }
+}
+
+function onDemo(form: SigninForm, login: DemoLogin) {
+  form.email = login.email;
+  form.password = DEMO_PASSWORD;
+  onSubmit(form);
+}
+
+<html lang="en" class="page-signin" (
+  demo: DemoLogin[],
+  private form: SigninForm = { email: "", password: "", error: "", busy: false },
+)>
+  <head>
+    <title>Sign in · kinroster</title>
+    <meta name="description" content="The family organizer: groceries, chores and dinners, shared in real time.">
+  </head>
+  <body>
+    <main class="auth-shell">
+      <div class="auth-grid">
+        <div class="auth-intro stack is-lg">
+          <div class="auth-brand row">
+            <span class="kin-mark">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5"/>
+                <path d="M5 9.5V20h14V9.5"/>
+                <path d="M10 20v-5.5h4V20"/>
+              </svg>
+            </span>
+            kinroster
+          </div>
+          <h1 class="display">The whole house, on everyone's phone.</h1>
+          <p class="lede">Shared grocery lists sorted by aisle, a chore chart that keeps score, and a week of dinners that fills the list in one tap.</p>
+        </div>
+
+        <div class="auth-card card stack is-lg">
+          <form class="stack" onsubmit={() => onSubmit(form)}>
+            <h2>Sign in</h2>
+
+            <p e:if={form.error} class="callout is-danger" role="alert">{form.error}</p>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email"
+                     name="email"
+                     type="email"
+                     value={form.email}
+                     autocomplete="email"
+                     autocapitalize="none"
+                     spellcheck={false}
+                     placeholder="you@example.com"
+                     required>
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password"
+                     name="password"
+                     type="password"
+                     value={form.password}
+                     autocomplete="current-password"
+                     required>
+            </div>
+
+            <button type="submit" class={["is-primary is-block", form.busy && "is-loading"]} disabled={form.busy}>Sign in</button>
+
+            <p class="text-sm">New here? <a href="/signup">Start a household</a></p>
+          </form>
+
+          <section class="auth-demo stack is-sm" e:if={demo.length > 0}>
+            <div class="auth-demo-head row">
+              <h3 class="text-sm">Demo household: {demo[0].householdName}</h3>
+              <span class="pill">password: {DEMO_PASSWORD}</span>
+            </div>
+            <div class="auth-demo-list">
+              <button e:for={login of demo}
+                      class="auth-demo-login row"
+                      type="button"
+                      disabled={form.busy}
+                      onclick={() => onDemo(form, login)}>
+                <Avatar name={login.name} color={login.color} size="lg" />
+                <span class="who">
+                  <strong>{firstName(login.name)} <small>· {ROLES[login.email]}</small></strong>
+                  <small>{login.email}</small>
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,194 @@
+import "./style.css";
+import { LiveView } from "@elements/app";
+import { Layout, Avatar } from "#app/shared/templates/layout";
+import { Meal, addMealToList } from "#app/shared/services/meals";
+import { GroceryList } from "#app/shared/services/groceries";
+import { Member, firstName, memberById } from "#app/shared/lib/members";
+import { ingredientLines } from "#app/shared/lib/aisles";
+import { WEEKDAYS, addDays, weekDays, weekdayIndex, dayOfMonth, shortDate, weekLabel } from "#app/shared/lib/dates";
+
+/** The one day being edited, and the text so far. */
+interface Edit {
+  day: string;
+  title: string;
+  cookId: string;
+  ingredients: string;
+  error: string;
+}
+
+interface Ui {
+  listId: string;
+  busy: string;
+  flash: string;
+}
+
+function mealOn(meals: LiveView<Meal>, day: string): Meal | undefined {
+  return meals.find((m) => m.day === day);
+}
+
+function onEdit(edit: Edit, day: string, meal: Meal | undefined) {
+  edit.day = day;
+  edit.title = meal?.title ?? "";
+  edit.cookId = meal?.cookId ?? "";
+  edit.ingredients = meal?.ingredients ?? "";
+  edit.error = "";
+}
+
+function onSave(meals: LiveView<Meal>, edit: Edit) {
+  let title = edit.title.trim();
+
+  if (!title) {
+    edit.error = "Name the dinner.";
+    return;
+  }
+
+  let fields = {
+    title,
+    cookId: edit.cookId || null,
+    ingredients: ingredientLines(edit.ingredients).join("\n"),
+  };
+
+  let meal = mealOn(meals, edit.day);
+
+  if (meal) {
+    meals.update({ ...meal, ...fields }, () => edit.day = "");
+    return;
+  }
+
+  meals.insert({ ...fields, day: edit.day, addedToListAt: null, createdAt: new Date() }, () => edit.day = "");
+}
+
+function onClear(meals: LiveView<Meal>, edit: Edit) {
+  let meal = mealOn(meals, edit.day);
+
+  if (meal) {
+    meals.delete(meal, () => edit.day = "");
+    return;
+  }
+
+  edit.day = "";
+}
+
+function onAddToList(ui: Ui, meal: Meal) {
+  ui.busy = meal.id;
+
+  try {
+    let result = addMealToList(meal.id, ui.listId);
+
+    ui.flash = result.added === 0
+      ? `Everything for ${meal.title} is already on ${result.listName}`
+      : `Added ${result.added} item${result.added === 1 ? "" : "s"} to ${result.listName}` + (result.skipped ? ` (${result.skipped} already there)` : "");
+  } catch (err: any) {
+    ui.flash = err.message;
+  }
+
+  ui.busy = "";
+  setTimeout(() => ui.flash = "", 3200);
+}
+
+<html lang="en" class="page-meals" (
+  householdName: string,
+  color: string,
+  members: Member[],
+  meals: LiveView<Meal>,
+  lists: GroceryList[],
+  week: string,
+  today: string,
+  private ui: Ui = { listId: lists[0]?.id ?? "", busy: "", flash: "" },
+  private edit: Edit = { day: "", title: "", cookId: "", ingredients: "", error: "" },
+)>
+  <head>
+    <title>Meal plan · kinroster</title>
+  </head>
+  <body>
+    <Layout active="meals" {householdName} {color}>
+      <div class="page-shell stack is-xl">
+        <div class="meals-head row">
+          <div class="row" style={{ gap: "var(--space-4)", "flex-wrap": "wrap" }}>
+            <h1>Dinners</h1>
+            <nav class="row" aria-label="Week" style={{ gap: "var(--space-1)" }}>
+              <a class="button is-ghost is-sm is-icon" href={`/meals?week=${addDays(week, -7)}`} aria-label="Previous week">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+              </a>
+              <span class="pill">{weekLabel(week)} · {shortDate(week)} – {shortDate(addDays(week, 6))}</span>
+              <a class="button is-ghost is-sm is-icon" href={`/meals?week=${addDays(week, 7)}`} aria-label="Next week">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+              </a>
+            </nav>
+          </div>
+          <label class="meals-target row" e:if={lists.length > 0}>
+            Ingredients go to
+            <select class="is-sm" value={ui.listId}>
+              <option e:for={list of lists} value={list.id}>{list.name}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="week-grid">
+          <article e:for={day of weekDays(week)} class={["meal card", day === today && "is-today"]}>
+            <header class="meal-day row">
+              <strong>{day === today ? "Tonight" : WEEKDAYS[weekdayIndex(day)]}</strong>
+              <span class="meal-date">{shortDate(day)}</span>
+            </header>
+
+            <form e:if={edit.day === day} class="meal-edit stack" onsubmit={() => onSave(meals, edit)}>
+              <input value={edit.title} placeholder="What's for dinner?" aria-label="Dinner" oninsert={(e) => (e.target as HTMLInputElement).focus()} required>
+              <select class="is-sm" value={edit.cookId} aria-label="Cook">
+                <option value="">No cook yet</option>
+                <option e:for={m of members} value={m.id}>{firstName(m.name)} cooks</option>
+              </select>
+              <textarea value={edit.ingredients} placeholder={"Ingredients, one per line\n2 lb chicken thighs\n1 bunch cilantro"} aria-label="Ingredients"></textarea>
+              <p e:if={edit.error} class="text-sm" style={{ color: "var(--danger)" }}>{edit.error}</p>
+              <div class="row">
+                <button class="is-sm is-ghost" type="button" onclick={() => onClear(meals, edit)}>{mealOn(meals, day) ? "Remove" : "Cancel"}</button>
+                <button class="is-sm is-primary" type="submit">Save</button>
+              </div>
+            </form>
+
+            <MealCard e:elseif={mealOn(meals, day)}
+                      meal={mealOn(meals, day)!}
+                      {members}
+                      {ui}
+                      canAdd={lists.length > 0}
+                      onedit={() => onEdit(edit, day, mealOn(meals, day))} />
+
+            <button e:else class="meal-empty" type="button" onclick={() => onEdit(edit, day, undefined)}>+ Plan dinner</button>
+          </article>
+        </div>
+
+        <p e:if={ui.flash} class="meals-flash callout is-success" role="status">{ui.flash}</p>
+      </div>
+    </Layout>
+  </body>
+</html>
+
+<MealCard (
+  meal: Meal,
+  members: Member[],
+  ui: Ui,
+  canAdd: boolean,
+  onedit: () => void,
+)>
+  <div class="meal-body">
+    <button class="meal-title" type="button" onclick={() => onedit()}>{meal.title}</button>
+    <span class="meal-cook row" e:if={memberById(members, meal.cookId)}>
+      <Avatar name={memberById(members, meal.cookId)!.name} color={memberById(members, meal.cookId)!.color} />
+      {firstName(memberById(members, meal.cookId)!.name)} cooks
+    </span>
+    <ul class="meal-ingredients">
+      <li e:for={line of ingredientLines(meal.ingredients)}>{line}</li>
+    </ul>
+  </div>
+  <div class="meal-foot stack is-xs" e:if={canAdd && ingredientLines(meal.ingredients).length > 0}>
+    <button class={["is-sm", !meal.addedToListAt && "is-primary", ui.busy === meal.id && "is-loading"]}
+            type="button"
+            disabled={ui.busy === meal.id}
+            onclick={() => onAddToList(ui, meal)}>
+      {meal.addedToListAt ? "Add again" : "Add to list"}
+    </button>
+    <span class="meal-added row" e:if={meal.addedToListAt}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      On the list
+    </span>
+  </div>
+</MealCard>
