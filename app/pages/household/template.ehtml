@@ -1,0 +1,131 @@
+import "./style.css";
+import { LiveView, redirect } from "@elements/app";
+import { signout } from "#app/shared/services/auth";
+import { Layout, Avatar } from "#app/shared/templates/layout";
+import { Invite } from "#app/shared/services/invites";
+import { Member } from "#app/shared/lib/members";
+
+interface InviteForm {
+  email: string;
+  error: string;
+  sent: string;
+  copied: string;
+}
+
+function pending(invites: LiveView<Invite>): Invite[] {
+  return invites
+    .filter((i) => !i.acceptedAt)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
+
+function onInvite(invites: LiveView<Invite>, form: InviteForm) {
+  let address = form.email.trim().toLowerCase();
+
+  if (!address) {
+    return;
+  }
+
+  if (invites.some((i) => i.email === address && !i.acceptedAt)) {
+    form.error = `${address} is already invited.`;
+    return;
+  }
+
+  form.error = "";
+
+  try {
+    invites.insert(
+      { email: address, token: "", invitedBy: "", acceptedAt: null, createdAt: new Date() },
+      () => form.email = "",
+    );
+    form.sent = address;
+  } catch (err: any) {
+    form.error = err.message;
+  }
+}
+
+async function onCopy(invite: Invite, form: InviteForm) {
+  await navigator.clipboard.writeText(`${location.origin}/join/${invite.token}`);
+  form.copied = invite.id;
+  setTimeout(() => form.copied = "", 1800);
+}
+
+function onSignout() {
+  signout();
+  redirect("/signin");
+}
+
+function onRevoke(invites: LiveView<Invite>, invite: Invite) {
+  invites.delete(invite);
+}
+
+<html lang="en" class="page-household" (
+  householdName: string,
+  color: string,
+  members: Member[],
+  me: string,
+  invites: LiveView<Invite>,
+  private form: InviteForm = { email: "", error: "", sent: "", copied: "" },
+)>
+  <head>
+    <title>Family · kinroster</title>
+  </head>
+  <body>
+    <Layout active="household" {householdName} {color}>
+      <div class="page-shell is-form stack is-xl">
+        <div class="household-head stack is-xs">
+          <p class="eyebrow">Household</p>
+          <h1>{householdName}</h1>
+        </div>
+
+        <section class="stack is-sm">
+          <h2 class="text-md">{members.length} {members.length === 1 ? "person" : "people"}</h2>
+          <ul class="people card">
+            <li e:for={m of members} class="person">
+              <Avatar name={m.name} color={m.color} size="lg" />
+              <span class="person-who">
+                <strong>{m.name}{m.id === me ? " (you)" : ""}</strong>
+                <small>{m.email}</small>
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        <section class="stack is-sm">
+          <h2 class="text-md">Invite family</h2>
+          <p class="text-sm" style={{ color: "var(--ink-soft)" }}>They get an email with a link to join {householdName}. Anyone who follows it lands straight in your lists, chores and meals.</p>
+          <form class="invite-form" onsubmit={() => onInvite(invites, form)}>
+            <input type="email"
+                   value={form.email}
+                   placeholder="grandpa@example.com"
+                   aria-label="Email to invite"
+                   autocomplete="off"
+                   autocapitalize="none"
+                   spellcheck={false}
+                   required>
+            <button class="is-primary" type="submit">Send invite</button>
+          </form>
+          <p e:if={form.error} class="callout is-danger" role="alert">{form.error}</p>
+          <p e:elseif={form.sent} class="callout is-success" role="status">Invitation sent to {form.sent}.</p>
+
+          <ul class="people card" e:if={pending(invites).length > 0}>
+            <li e:for={invite of pending(invites)} class="person is-pending">
+              <Avatar name={invite.email} color="" size="lg" />
+              <span class="person-who">
+                <strong>{invite.email}</strong>
+                <small>Invited by {invite.invitedBy || "you"} · waiting to join</small>
+              </span>
+              <span class="person-actions row">
+                <button class="is-ghost is-sm" type="button" disabled={!invite.token} onclick={() => onCopy(invite, form)}>{form.copied === invite.id ? "Copied" : "Copy link"}</button>
+                <button class="is-ghost is-sm" type="button" onclick={() => onRevoke(invites, invite)}>Revoke</button>
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        <div class="row" style={{ "justify-content": "flex-end" }}>
+          <button type="button" onclick={() => onSignout()}>Sign out</button>
+        </div>
+      </div>
+    </Layout>
+  </body>
+</html>

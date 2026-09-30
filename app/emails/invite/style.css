@@ -1,0 +1,21 @@
+@import "#app/shared/styles/email.css";
+
+.email.invite .household {
+  color: #047857;
+}
+
+.email.invite a.button {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: #047857;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.email.invite .muted {
+  color: #64748b;
+  font-size: 13px;
+  word-break: break-all;
+}

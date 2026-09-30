@@ -1,0 +1,208 @@
+import "./style.css";
+import { LiveView, redirect, session } from "@elements/app";
+import { Layout } from "#app/shared/templates/layout";
+import { GroceryList, GroceryItem } from "#app/shared/services/groceries";
+import { AISLES, aisleLabel, guessAisle } from "#app/shared/lib/aisles";
+import { firstName } from "#app/shared/lib/members";
+
+interface Draft {
+  quantity: string;
+  name: string;
+  aisle: string;
+}
+
+interface NewList {
+  open: boolean;
+  name: string;
+}
+
+/** One aisle's worth of unchecked items, in the order the store walks. */
+interface AisleGroup {
+  id: string;
+  key: string;
+  label: string;
+  items: GroceryItem[];
+}
+
+function byCreated(a: { createdAt: Date }, b: { createdAt: Date }): number {
+  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+}
+
+function toGet(items: LiveView<GroceryItem>): AisleGroup[] {
+  let open = items.filter((i) => !i.done).sort(byCreated);
+
+  return AISLES
+    .map((a) => ({ id: a.key, key: a.key, label: a.label, items: open.filter((i) => i.aisle === a.key) }))
+    .filter((g) => g.items.length > 0);
+}
+
+function inCart(items: LiveView<GroceryItem>): GroceryItem[] {
+  return items.filter((i) => i.done).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function onAdd(items: LiveView<GroceryItem>, draft: Draft) {
+  let name = draft.name.trim();
+
+  if (!name) {
+    return;
+  }
+
+  items.insert(
+    {
+      name,
+      quantity: draft.quantity.trim(),
+      aisle: draft.aisle || guessAisle(name),
+      done: false,
+      addedBy: session.get("userName") ?? "",
+      createdAt: new Date(),
+    },
+    () => {
+      draft.name = "";
+      draft.quantity = "";
+      draft.aisle = "";
+    },
+  );
+}
+
+function onToggle(items: LiveView<GroceryItem>, item: GroceryItem) {
+  items.update({ ...item, done: !item.done });
+}
+
+function onRemove(items: LiveView<GroceryItem>, item: GroceryItem) {
+  items.delete(item);
+}
+
+function onClearCart(items: LiveView<GroceryItem>) {
+  for (let item of items.filter((i) => i.done)) {
+    items.delete(item);
+  }
+}
+
+function onCreateList(lists: LiveView<GroceryList>, form: NewList) {
+  let name = form.name.trim();
+
+  if (!name) {
+    return;
+  }
+
+  let list = lists.insert({ name, createdAt: new Date() }, () => {
+    form.name = "";
+    form.open = false;
+  });
+
+  redirect(`/lists/${list.id}`);
+}
+
+function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
+  if (!confirm(`Delete "${list.name}" and everything on it?`)) {
+    return;
+  }
+
+  lists.delete(list);
+  redirect("/lists");
+}
+
+<html lang="en" class="page-lists" (
+  householdName: string,
+  color: string,
+  lists: LiveView<GroceryList>,
+  listId: string,
+  items: LiveView<GroceryItem>,
+  private draft: Draft = { quantity: "", name: "", aisle: "" },
+  private newList: NewList = { open: false, name: "" },
+)>
+  <head>
+    <title>{lists.get(listId)?.name ?? "Groceries"} · kinroster</title>
+  </head>
+  <body>
+    <Layout active="lists" {householdName} {color}>
+      <div class="page-shell is-form stack is-lg">
+        <div class="stack is-sm">
+          <nav class="lists-tabs row" aria-label="Grocery lists">
+            <a e:for={list of lists.sort(byCreated)}
+               href={`/lists/${list.id}`}
+               class={["lists-tab", list.id === listId && "is-active"]}>{list.name}</a>
+
+            <form e:if={newList.open} class="lists-newlist row" onsubmit={() => onCreateList(lists, newList)}>
+              <input class="is-sm" value={newList.name} placeholder="List name" aria-label="New list name" oninsert={(e) => (e.target as HTMLInputElement).focus()} required>
+              <button class="is-sm is-primary" type="submit">Create</button>
+              <button class="is-sm is-ghost" type="button" onclick={() => newList.open = false}>Cancel</button>
+            </form>
+            <button e:else class="is-sm is-ghost" type="button" onclick={() => newList.open = true}>+ New list</button>
+          </nav>
+
+          <div class="lists-head row">
+            <h1>{lists.get(listId)?.name}</h1>
+            <button e:if={lists.length > 1}
+                    class="is-sm is-ghost"
+                    type="button"
+                    onclick={() => onDeleteList(lists, lists.get(listId)!)}>Delete list</button>
+          </div>
+
+          <div class="lists-progress row" e:if={items.length > 0}>
+            <span>{items.filter((i) => !i.done).length} to get</span>
+            <progress max={items.length} value={items.filter((i) => i.done).length}></progress>
+            <span>{items.filter((i) => i.done).length} in the cart</span>
+          </div>
+        </div>
+
+        <form class="lists-add" onsubmit={() => onAdd(items, draft)}>
+          <input class="lists-add-qty" value={draft.quantity} placeholder="Qty" aria-label="Quantity">
+          <input class="lists-add-name" value={draft.name} placeholder="Add an item…" aria-label="Item" autocomplete="off" required>
+          <select value={draft.aisle} aria-label="Aisle">
+            <option value="">Auto · {aisleLabel(guessAisle(draft.name))}</option>
+            <option e:for={a of AISLES} value={a.key}>{a.label}</option>
+          </select>
+          <button class="is-primary" type="submit">Add</button>
+        </form>
+
+        <div class="lists-empty card" e:if={items.length === 0}>
+          <p><strong>Nothing on this list yet.</strong></p>
+          <p class="text-sm">Add what you need above, or send a dinner's ingredients here from the meal plan.</p>
+        </div>
+
+        <section e:for={group of toGet(items)} class="aisle card">
+          <div class="aisle-head row">
+            <h2>{group.label}</h2>
+            <span class="aisle-count">{group.items.length}</span>
+          </div>
+          <ul class="items">
+            <ItemRow e:for={item of group.items} {items} {item} />
+          </ul>
+        </section>
+
+        <section class="aisle cart card" e:if={inCart(items).length > 0}>
+          <div class="aisle-head row">
+            <h2>In the cart · {inCart(items).length}</h2>
+            <button class="is-sm is-ghost" type="button" onclick={() => onClearCart(items)}>Clear</button>
+          </div>
+          <ul class="items">
+            <ItemRow e:for={item of inCart(items)} {items} {item} />
+          </ul>
+        </section>
+      </div>
+    </Layout>
+  </body>
+</html>
+
+<ItemRow (items: LiveView<GroceryItem>, item: GroceryItem)>
+  <li class={["item", item.done && "is-done"]}>
+    <button class="item-check" type="button" aria-pressed={item.done} onclick={() => onToggle(items, item)}>
+      <span class="item-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7.5"/>
+        </svg>
+      </span>
+      <span class="item-name">
+        <span class="item-title">{item.name}</span>
+        <small e:if={item.addedBy}>{firstName(item.addedBy)}</small>
+      </span>
+      <span e:if={item.quantity} class="item-qty pill">{item.quantity}</span>
+    </button>
+    <button class="item-remove is-ghost is-sm is-icon" type="button" aria-label={`Remove ${item.name}`} onclick={() => onRemove(items, item)}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+  </li>
+</ItemRow>

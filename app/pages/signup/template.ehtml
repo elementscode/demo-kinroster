@@ -1,0 +1,106 @@
+import "./style.css";
+import { redirect } from "@elements/app";
+import { signup, MIN_PASSWORD, SignupForm, InviteInfo } from "#app/shared/services/auth";
+
+function onSubmit(form: SignupForm, busy: { on: boolean }) {
+  busy.on = true;
+
+  try {
+    signup(form);
+    form.error = "";
+    redirect("/lists");
+  } catch (err: any) {
+    form.error = err.message;
+    busy.on = false;
+  }
+}
+
+<html lang="en" class="page-signup" (
+  invite: InviteInfo | null,
+  expired: boolean,
+  private form: SignupForm = {
+    name: "",
+    email: invite?.email ?? "",
+    password: "",
+    householdName: "",
+    invite: invite?.token ?? "",
+    error: "",
+  },
+  private busy: { on: boolean } = { on: false },
+)>
+  <head>
+    <title>{invite ? `Join ${invite.householdName}` : "Start a household"} · kinroster</title>
+  </head>
+  <body>
+    <main class="auth-shell">
+      <div class="auth-grid">
+        <div class="auth-intro stack is-lg">
+          <div class="auth-brand row">
+            <span class="kin-mark">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5"/>
+                <path d="M5 9.5V20h14V9.5"/>
+                <path d="M10 20v-5.5h4V20"/>
+              </svg>
+            </span>
+            kinroster
+          </div>
+          <h1 e:if={invite} class="display">{invite!.invitedBy} saved you a spot in {invite!.householdName}.</h1>
+          <h1 e:else class="display">Start your household.</h1>
+          <p class="lede" e:if={invite}>Make an account and you'll see the family's lists, chores and dinners straight away.</p>
+          <p class="lede" e:else>Make an account, name the household, then invite everyone from the Family tab.</p>
+        </div>
+
+        <div class="auth-card card">
+          <form class="stack" onsubmit={() => onSubmit(form, busy)}>
+            <h2>{invite ? "Join the household" : "Create your account"}</h2>
+
+            <p e:if={expired} class="callout is-warning">That invitation has been used or revoked. You can still start a household of your own.</p>
+            <p e:if={form.error} class="callout is-danger" role="alert">{form.error}</p>
+
+            <div class="field">
+              <label for="name">Your name</label>
+              <input id="name" name="name" value={form.name} autocomplete="name" placeholder="Alex Rivera" required>
+            </div>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email"
+                     name="email"
+                     type="email"
+                     value={form.email}
+                     autocomplete="email"
+                     autocapitalize="none"
+                     spellcheck={false}
+                     placeholder="you@example.com"
+                     required>
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password"
+                     name="password"
+                     type="password"
+                     value={form.password}
+                     autocomplete="new-password"
+                     minlength={MIN_PASSWORD}
+                     required>
+              <p class="hint">At least {MIN_PASSWORD} characters.</p>
+            </div>
+
+            <div class="field" e:if={!invite}>
+              <label for="household">Household name</label>
+              <input id="household" name="household" value={form.householdName} placeholder="The Parks" required>
+            </div>
+
+            <button type="submit" class={["is-primary is-block", busy.on && "is-loading"]} disabled={busy.on}>
+              {invite ? `Join ${invite.householdName}` : "Create household"}
+            </button>
+
+            <p class="text-sm">Already have an account? <a href="/signin">Sign in</a></p>
+          </form>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+import "./style.css";
+
+/**
+ * The invitation a member sends from the Family page.
+ *
+ * @email
+ */
+<html (invitedBy: string, householdName: string, link: string)>
+  <body class="email invite">
+    <div class="email-wrap">
+      <h1>Join <span class="household">{householdName}</span> on kinroster</h1>
+      <p>{invitedBy} invited you to share the family's grocery lists, chore chart and dinner plan.</p>
+      <p><a class="button" href={link}>Accept the invitation</a></p>
+      <p class="muted">Or paste this link into your browser: {link}</p>
+      <div class="email-footer">You got this because {invitedBy} added your address. Ignore it if it's not for you.</div>
+    </div>
+  </body>
+</html>
