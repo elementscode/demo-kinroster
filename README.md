@@ -1,12 +1,12 @@
-![Kinroster, a family organizer built with Elements: the chores page with a weekly points leaderboard, a day strip and today's checklist.](POSTER_URL)
+![Kinroster, a family organizer built with Elements: the chores page with a weekly points leaderboard, a day strip and today's checklist.](https://elements.dev/demos/01a0f3d7-cb1c-79c6-8b96-13f89b0ef8e3/poster?v=bf1341f4bcd6)
 
 # Kinroster
 
 > A demo app built with [Elements](https://elements.dev).
 
-Shared grocery lists sorted by aisle, recurring chores with a weekly points tally, and a dinner plan that adds its ingredients to the list, live on every phone.
+Grocery lists sorted by aisle, chores with a weekly points tally, and a dinner plan that fills the list, live on every phone.
 
-**Demo:** [Kinroster](TBD)
+**Demo:** [Kinroster](https://elements.dev/demos/01a0f3d7-cb1c-79c6-8b96-13f89b0ef8e3)
 
 ## Agent specs
 
