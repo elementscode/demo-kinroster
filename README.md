@@ -23,6 +23,24 @@ app.
 elements create kinroster -scaffold=elementscode/demo-kinroster
 ```
 
+## How it's built
+
+Kinroster needed lists, chores and a meal plan that every phone in the house sees change at once, a household that stays private to its members, and invitations by email. Each of those is a part of Elements, so the agent spent its 16 minutes on the family organizer itself.
+
+### What Elements gave the app
+
+- **Live data on every phone.** Grocery lists, items, chores, completions, meals and invites are six LiveTables in `app/shared/services/`. The pages write straight to them, so an item checked off in the store shows as checked on every other phone the moment it is tapped. `groceryItems` is partitioned by list, so a phone hears only the list it has open.
+- **One household guard.** Every LiveTable handler and rpc calls `householdOrThrow` in `app/shared/services/household.ts` before it touches a row, so each family reads and writes only its own data.
+- **Rules in the handlers.** The `choreCompletions` insert handler copies the chore's points onto the completion, so the weekly tally on the chores page keeps the value each chore had when it was done. The `invites` insert handler checks the address and sends the invitation email with a link to `/join/:token`.
+- **A meal to the list in one tap.** `addMealToList` in `app/shared/services/meals.ts` is an `@rpc` that parses a dinner's ingredients, guesses each aisle, skips anything already on the list and writes the rest through the live view, so every phone on that list sees the items land.
+- **Data from SQL files.** Two migrations define the household and seed the Parks: four logins, two grocery lists, ten chores with about ten days of history, six dinners this week and a pending invite. Dates are relative to the day the seed runs.
+
+### What the agent got from the tooling
+
+The agent ran 27 builds in 16 minutes. By the build's own timer, the median build finished in 44 milliseconds, so it checked its work after each edit and kept going. The build caught errors in four of them, among them a migration syntax error and a malformed `e:for` loop variable, each with a message that named the fix. The agent read the manual for each part as it reached it, 35 topics from `recipes/team-partitioned-table` and `livetable/handlers` to `html/forms`, then wrote 28 tests and checked its pages in a real browser, including at phone width.
+
+Start in `app/shared/services/meals.ts`.
+
 ## Seed data and demo accounts
 
 The seed creates one household, the Parks, with two grocery lists (Weekly shop
