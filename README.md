@@ -35,9 +35,13 @@ Kinroster needed lists, chores and a meal plan that every phone in the house see
 - **A meal to the list in one tap.** `addMealToList` in `app/shared/services/meals.ts` is an `@rpc` that parses a dinner's ingredients, guesses each aisle, skips anything already on the list and writes the rest through the live view, so every phone on that list sees the items land.
 - **Data from SQL files.** Two migrations define the household and seed the Parks: four logins, two grocery lists, ten chores with about ten days of history, six dinners this week and a pending invite. Dates are relative to the day the seed runs.
 
-### What the agent got from the tooling
+### What the project server gave the agent
 
-The agent ran 27 builds in 16 minutes. By the build's own timer, the median build finished in 44 milliseconds, so it checked its work after each edit and kept going. The build caught errors in four of them, among them a migration syntax error and a malformed `e:for` loop variable, each with a message that named the fix. The agent read the manual for each part as it reached it, 35 topics from `recipes/team-partitioned-table` and `livetable/handlers` to `html/forms`, then wrote 28 tests and checked its pages in a real browser, including at phone width.
+The project server runs alongside the agent and answers as soon as a file is saved, so every question came back right away: does it type-check, does it build, did the migration apply, do the tests pass. The agent asked 27 times in 16 minutes and kept moving after each answer. Four times the build caught a mistake, among them a migration syntax error and a malformed `e:for` loop variable, each with a message that named the fix. It read the manual for each part as it reached it, 35 pages from `recipes/team-partitioned-table` to `livetable/handlers`.
+
+### What shipped
+
+The app type-checks with zero errors and all 28 tests pass. Every page was checked on desktop and phone before publishing. The repo was installed fresh from GitHub and run before the demo went live.
 
 Start in `app/shared/services/meals.ts`.
 
