@@ -37,7 +37,7 @@ Kinroster needed lists, chores and a meal plan that every phone in the house see
 
 ### What the project server gave the agent
 
-The project server runs alongside the agent and answers as soon as a file is saved, so every question came back right away: does it type-check, does it build, did the migration apply, do the tests pass. The agent asked 27 times in 16 minutes and kept moving after each answer. Four times the build caught a mistake, among them a migration syntax error and a malformed `e:for` loop variable, each with a message that named the fix. It read the manual for each part as it reached it, 35 pages from `recipes/team-partitioned-table` to `livetable/handlers`.
+The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
 
 ### What shipped
 
