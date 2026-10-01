@@ -29,11 +29,12 @@ Kinroster needed lists, chores and a meal plan that every phone in the house see
 
 ### What Elements gave the app
 
-- **Live data on every phone.** Grocery lists, items, chores, completions, meals and invites are six LiveTables in `app/shared/services/`. The pages write straight to them, so an item checked off in the store shows as checked on every other phone the moment it is tapped. `groceryItems` is partitioned by list, so a phone hears only the list it has open.
-- **One household guard.** Every LiveTable handler and rpc calls `householdOrThrow` in `app/shared/services/household.ts` before it touches a row, so each family reads and writes only its own data.
-- **Rules in the handlers.** The `choreCompletions` insert handler copies the chore's points onto the completion, so the weekly tally on the chores page keeps the value each chore had when it was done. The `invites` insert handler checks the address and sends the invitation email with a link to `/join/:token`.
-- **A meal to the list in one tap.** `addMealToList` in `app/shared/services/meals.ts` is an `@rpc` that parses a dinner's ingredients, guesses each aisle, skips anything already on the list and writes the rest through the live view, so every phone on that list sees the items land.
-- **Data from SQL files.** Two migrations define the household and seed the Parks: four logins, two grocery lists, ten chores with about ten days of history, six dinners this week and a pending invite. Dates are relative to the day the seed runs.
+- **Live data on every phone.** Grocery lists and items, chores, completed chores, meals and invites are LiveTables the pages write to directly. An item checked off in the store shows as checked on every other phone the moment it is tapped, and each phone hears only the list it has open.
+- **One household per family.** Every write passes one session guard, so each family reads and writes only its own lists, chores and meals.
+- **Chores and points.** Marking a chore done records the points it was worth at that moment, so the weekly tally stays fair when someone changes a chore later.
+- **Invites by email.** Adding an invite checks the address and emails a join link, and signing up through it puts the new member in the household.
+- **A meal to the list in one tap.** An `@rpc` server function reads a dinner's ingredients, guesses each aisle, skips anything already on the list and adds the rest through the live list, so every phone on it sees the items land.
+- **Data from SQL files.** Migrations define the household and seed the Parks: four logins, two grocery lists, ten chores with about ten days of history, six dinners this week and a pending invite, all dated from the day the seed runs.
 
 ### What the project server gave the agent
 
@@ -42,8 +43,6 @@ The project server runs alongside the agent and answers as soon as a file is sav
 ### What shipped
 
 The app type-checks with zero errors and all 28 tests pass. Every page works on desktop and phone.
-
-Start in `app/shared/services/meals.ts`.
 
 ## Seed data and demo accounts
 
