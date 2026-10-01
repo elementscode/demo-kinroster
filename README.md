@@ -30,10 +30,15 @@ Kinroster needed lists, chores and a meal plan that every phone in the house see
 ### What Elements gave the app
 
 - **Live data on every phone.** Grocery lists and items, chores, completed chores, meals and invites are LiveTables the pages write to directly. An item checked off in the store shows as checked on every other phone the moment it is tapped, and each phone hears only the list it has open.
+
 - **One household per family.** Every write passes one session guard, so each family reads and writes only its own lists, chores and meals.
+
 - **Chores and points.** Marking a chore done records the points it was worth at that moment, so the weekly tally stays fair when someone changes a chore later.
+
 - **Invites by email.** Adding an invite checks the address and emails a join link, and signing up through it puts the new member in the household.
+
 - **A meal to the list in one tap.** An `@rpc` server function reads a dinner's ingredients, guesses each aisle, skips anything already on the list and adds the rest through the live list, so every phone on it sees the items land.
+
 - **Data from SQL files.** Migrations define the household and seed the Parks: four logins, two grocery lists, ten chores with about ten days of history, six dinners this week and a pending invite, all dated from the day the seed runs.
 
 ### What the project server gave the agent
