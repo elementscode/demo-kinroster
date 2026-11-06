@@ -264,7 +264,7 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
                     </NativeSelect>
                   </Field>
                   <Field label="Points">
-                    <NumberInput value={draft.points} min={1} max={20} buttons="end" />
+                    <NumberInput value={draft.points} min={1} max={20} buttons="end" attrs={{ id: "chore-points" }} />
                   </Field>
                   <Button variant="primary" type="submit">Add</Button>
                 </form>
