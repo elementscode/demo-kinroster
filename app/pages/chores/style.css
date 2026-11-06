@@ -188,11 +188,6 @@
 
 /* The week chart: a Table, a checkbox per due day. */
 
-.chart th,
-.chart td {
-  text-align: center;
-}
-
 .chart thead th.is-today {
   color: var(--accent-deep);
 }
@@ -201,9 +196,7 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: var(--bg);
-  text-align: left;
-  white-space: nowrap;
+  background: var(--bg-elevated);
 }
 
 .chart th[scope="row"] .row {
