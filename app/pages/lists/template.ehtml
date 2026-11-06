@@ -131,9 +131,8 @@ function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
 
             <form e:if={newList.open}
                   class="lists-newlist row"
-                  oninsert={(e) => (e.target as HTMLElement).querySelector("input")?.focus()}
                   onsubmit={() => onCreateList(lists, newList)}>
-              <Input size="sm" value={newList.name} placeholder="List name" required attrs={{ "aria-label": "New list name" }} />
+              <Input size="sm" value={newList.name} placeholder="List name" required autoFocus attrs={{ "aria-label": "New list name" }} />
               <Button size="sm" variant="primary" type="submit">Create</Button>
               <Button size="sm" variant="ghost" onclick={() => newList.open = false}>Cancel</Button>
             </form>

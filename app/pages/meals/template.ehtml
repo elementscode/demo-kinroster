@@ -133,9 +133,8 @@ function onAddToList(ui: Ui, meal: Meal) {
 
             <form e:if={edit.day === day}
                   class="meal-edit stack"
-                  oninsert={(e) => (e.target as HTMLElement).querySelector("input")?.focus()}
                   onsubmit={() => onSave(meals, edit)}>
-              <Input value={edit.title} placeholder="What's for dinner?" required attrs={{ "aria-label": "Dinner" }} />
+              <Input value={edit.title} placeholder="What's for dinner?" required autoFocus attrs={{ "aria-label": "Dinner" }} />
               <NativeSelect size="sm" block value={edit.cookId} attrs={{ "aria-label": "Cook" }}>
                 <option value="">No cook yet</option>
                 <option e:for={m of members} value={m.id}>{firstName(m.name)} cooks</option>
