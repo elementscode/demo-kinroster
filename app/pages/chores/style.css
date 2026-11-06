@@ -81,18 +81,7 @@
 }
 
 .board-bar {
-  height: 0.375rem;
-  border-radius: var(--radius-full);
-  background: var(--bg-muted);
-  overflow: hidden;
-}
-
-.board-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width var(--duration-slow) var(--ease-out);
+  --progress-color: var(--accent);
 }
 
 .board-crown {
@@ -102,28 +91,28 @@
   color: var(--warning);
 }
 
-/* Day strip */
+/* Day strip: Tabs, one per day, the active day in the accent. */
 
-.days {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--space-1-5);
+.days-tabs {
+  --tab-active-bg: var(--accent);
+  --tab-active-ink: var(--accent-ink);
 }
 
-.day {
-  display: flex;
+.days-tabs > .tab-list {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+}
+
+.days-tabs > .tab-list > .day {
   flex-direction: column;
-  align-items: center;
   gap: var(--space-0-5);
   height: auto;
   padding: var(--space-2) 0;
-  border-radius: var(--radius-xl);
-  font-weight: var(--weight-medium);
 }
 
 .day-name {
   font-size: var(--text-xs);
-  color: var(--ink-soft);
 }
 
 .day-num {
@@ -134,32 +123,15 @@
 
 .day-dots {
   font-size: var(--text-2xs);
-  color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
 }
 
-.day.is-today .day-num {
+.day.is-today:not([data-state="active"]) .day-num {
   color: var(--accent-deep);
 }
 
-.day.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.day.is-active .day-name,
-.day.is-active .day-num,
-.day.is-active .day-dots {
-  color: inherit;
-}
-
-.day.is-complete .day-dots {
+.day.is-complete:not([data-state="active"]) .day-dots {
   color: var(--success);
-}
-
-.day.is-active.is-complete .day-dots {
-  color: inherit;
 }
 
 /* The day's chores */
@@ -183,41 +155,12 @@
 
 .task {
   display: flex;
-  align-items: center;
   gap: var(--space-3);
   width: 100%;
-  height: auto;
   min-height: 3.5rem;
   padding: var(--space-2) var(--space-3);
-  border: 0;
   border-radius: var(--radius-lg);
-  background: transparent;
-  box-shadow: none;
-  text-align: left;
   font-weight: var(--weight-regular);
-  color: var(--ink);
-}
-
-.task:hover:not(:disabled) {
-  background: var(--bg-soft);
-}
-
-.task-box {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 2px solid var(--rule-strong);
-  border-radius: var(--radius-md);
-  color: transparent;
-  transition: var(--transition-colors);
-}
-
-.task.is-done .task-box {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
 }
 
 .task-title {
@@ -249,81 +192,28 @@
   color: var(--accent-deep);
 }
 
-/* The week chart */
-
-.chart-wrap {
-  overflow-x: auto;
-}
-
-.chart {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-}
+/* The week chart: a Table, a checkbox per due day. */
 
 .chart th,
 .chart td {
-  padding: var(--space-1-5) var(--space-1);
-  border-bottom: 1px solid var(--rule-soft);
   text-align: center;
-}
-
-.chart thead th {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--ink-soft);
 }
 
 .chart thead th.is-today {
   color: var(--accent-deep);
-  font-weight: var(--weight-bold);
 }
 
 .chart th[scope="row"] {
   position: sticky;
   left: 0;
+  z-index: 1;
   background: var(--bg);
   text-align: left;
-  font-weight: var(--weight-medium);
-  padding-inline: var(--space-4) var(--space-2);
   white-space: nowrap;
 }
 
 .chart th[scope="row"] .row {
   gap: var(--space-2);
-}
-
-.chart tr:last-child th,
-.chart tr:last-child td {
-  border-bottom: 0;
-}
-
-.cell {
-  display: inline-grid;
-  place-items: center;
-  width: 1.875rem;
-  height: 1.875rem;
-  padding: 0;
-  border: 1.5px solid var(--rule);
-  border-radius: var(--radius-full);
-  background: transparent;
-  box-shadow: none;
-  color: transparent;
-}
-
-.cell.is-done {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.cell.is-missed {
-  border-style: dashed;
-  border-color: var(--danger-edge);
-}
-
-.cell:disabled {
-  opacity: 0.45;
 }
 
 .cell-off {
@@ -332,15 +222,21 @@
 
 /* Managing the chores */
 
-.manage summary {
+.manage-trigger {
+  justify-content: flex-start;
+  border-radius: 0;
   font-weight: var(--weight-semibold);
 }
 
 .chore-form {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) 5rem auto;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(7.5rem, 1fr)) 6.5rem auto;
   gap: var(--space-2);
-  align-items: end;
+  align-items: start;
+}
+
+.chore-form > .button {
+  margin-top: calc(var(--text-label) * var(--leading-snug) + var(--space-2));
 }
 
 .chore-rows {
@@ -383,15 +279,11 @@
 @media (max-width: 40rem) {
   .chart th,
   .chart td {
-    padding-inline: 0;
-  }
-
-  .chart tr > :last-child {
-    padding-inline-end: var(--space-2);
+    padding-inline: var(--space-0-5);
   }
 
   .chart th[scope="row"] {
-    padding-inline: var(--space-3) var(--space-1);
+    padding-inline-start: var(--space-3);
     white-space: normal;
     font-size: var(--text-xs);
     line-height: var(--leading-snug);
@@ -399,16 +291,6 @@
 
   .chart th[scope="row"] .kin-avatar {
     display: none;
-  }
-
-  .cell {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .cell svg {
-    width: 11px;
-    height: 11px;
   }
 
   .chore-row {

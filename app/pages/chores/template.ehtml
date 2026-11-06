@@ -4,6 +4,22 @@ import { Layout, MemberAvatar } from "#app/shared/templates/layout";
 import { Chore, Completion, Frequency } from "#app/shared/services/chores";
 import { Member, firstName, memberById } from "#app/shared/lib/members";
 import { isDue, cadence } from "#app/shared/lib/chores";
+import { AlertDialog, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@elements/ui/alert-dialog";
+import { Alert } from "@elements/ui/alert";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { Card, CardContent } from "@elements/ui/card";
+import { Checkbox } from "@elements/ui/checkbox";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@elements/ui/collapsible";
+import { Field } from "@elements/ui/field";
+import { Icon } from "@elements/ui/icon";
+import { Input } from "@elements/ui/input";
+import { Label } from "@elements/ui/label";
+import { NativeSelect } from "@elements/ui/native-select";
+import { NumberInput } from "@elements/ui/number-input";
+import { Progress } from "@elements/ui/progress";
+import { Table, TableHead, TableCell } from "@elements/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@elements/ui/tabs";
 import { WEEKDAYS, WEEKDAY_NAMES, addDays, weekDays, weekdayIndex, inWeek, dayOfMonth, shortDate, weekLabel } from "#app/shared/lib/dates";
 
 interface Ui {
@@ -15,7 +31,7 @@ interface ChoreDraft {
   frequency: Frequency;
   weekday: string;
   assigneeId: string;
-  points: number;
+  points: number | null;
   error: string;
 }
 
@@ -57,10 +73,8 @@ function scores(members: Member[], completions: LiveView<Completion>, week: stri
     .sort((a, b) => b.points - a.points);
 }
 
-function barWidth(board: Score[], score: Score): string {
-  let max = Math.max(1, ...board.map((s) => s.points));
-
-  return `${Math.round((score.points / max) * 100)}%`;
+function topPoints(board: Score[]): number {
+  return Math.max(1, ...board.map((s) => s.points));
 }
 
 function onToggle(completions: LiveView<Completion>, chore: Chore, day: string) {
@@ -108,9 +122,7 @@ function onAssign(chores: LiveView<Chore>, chore: Chore, e: Event) {
 }
 
 function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
-  if (confirm(`Remove "${chore.title}" and its history?`)) {
-    chores.delete(chore);
-  }
+  chores.delete(chore);
 }
 
 <html lang="en" class="page-chores" (
@@ -133,13 +145,9 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
         <div class="chores-head row">
           <h1>Chores</h1>
           <nav class="week-nav row" aria-label="Week">
-            <a class="button is-ghost is-sm is-icon" href={`/chores?week=${addDays(week, -7)}`} aria-label="Previous week">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-            </a>
+            <Button href={`/chores?week=${addDays(week, -7)}`} variant="ghost" size="sm" icon label="Previous week"><Icon name="chevron-left" /></Button>
             <span class="week-nav-label">{weekLabel(week)}<small>{shortDate(week)} – {shortDate(addDays(week, 6))}</small></span>
-            <a class="button is-ghost is-sm is-icon" href={`/chores?week=${addDays(week, 7)}`} aria-label="Next week">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-            </a>
+            <Button href={`/chores?week=${addDays(week, 7)}`} variant="ghost" size="sm" icon label="Next week"><Icon name="chevron-right" /></Button>
           </nav>
         </div>
 
@@ -147,159 +155,158 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
           <Leader e:for={score of scores(members, completions, week)}
                   {score}
                   leader={score.points > 0 && score.member.id === scores(members, completions, week)[0].member.id}
-                  width={barWidth(scores(members, completions, week), score)} />
+                  max={topPoints(scores(members, completions, week))} />
         </section>
 
-        <section class="stack is-sm">
-          <div class="days" role="tablist" aria-label="Day">
-            <button e:for={day of weekDays(week)}
-                    type="button"
-                    role="tab"
-                    aria-selected={ui.day === day}
-                    class={[
-                      "day",
-                      ui.day === day && "is-active",
-                      day === today && "is-today",
-                      day <= today && doneOn(chores, completions, day) === dueOn(chores, day).length && "is-complete",
-                    ]}
-                    onclick={() => ui.day = day}>
+        <Tabs value={ui.day} variant="segmented" class="days-tabs">
+          <TabsList label="Day">
+            <TabsTrigger e:for={day of weekDays(week)}
+                         value={day}
+                         class={[
+                           "day",
+                           day === today && "is-today",
+                           day <= today && doneOn(chores, completions, day) === dueOn(chores, day).length && "is-complete",
+                         ].filter(Boolean).join(" ")}>
               <span class="day-name">{WEEKDAYS[weekdayIndex(day)]}</span>
               <span class="day-num">{dayOfMonth(day)}</span>
               <span class="day-dots">{doneOn(chores, completions, day)}/{dueOn(chores, day).length}</span>
-            </button>
-          </div>
+            </TabsTrigger>
+          </TabsList>
 
-          <div class="card">
-            <div class="today-head row">
-              <h2>{ui.day === today ? "Today" : WEEKDAY_NAMES[weekdayIndex(ui.day)]} <span class="text-sm" style={{ color: "var(--ink-soft)", "font-weight": "400" }}>{shortDate(ui.day)}</span></h2>
-              <span class="pill" e:if={ui.day > today}>Coming up</span>
-              <span class="pill is-success" e:elseif={dueOn(chores, ui.day).length > 0 && doneOn(chores, completions, ui.day) === dueOn(chores, ui.day).length}>All done</span>
+          <TabsContent e:for={day of weekDays(week)} value={day}>
+            <div class="card">
+              <div class="today-head row">
+                <h2>{day === today ? "Today" : WEEKDAY_NAMES[weekdayIndex(day)]} <span class="text-sm" style={{ color: "var(--ink-soft)", "font-weight": "400" }}>{shortDate(day)}</span></h2>
+                <Badge e:if={day > today} variant="secondary">Coming up</Badge>
+                <Badge e:elseif={dueOn(chores, day).length > 0 && doneOn(chores, completions, day) === dueOn(chores, day).length} variant="success">All done</Badge>
+              </div>
+              <ul class="task-list">
+                <li e:for={chore of dueOn(chores, day)}>
+                  <Label class={["task", completionFor(completions, chore, day) && "is-done"].filter(Boolean).join(" ")}>
+                    <Checkbox checked={!!completionFor(completions, chore, day)}
+                              disabled={day > today}
+                              onCheckedChange={() => onToggle(completions, chore, day)} />
+                    <span class="task-title">
+                      <span>{chore.title}</span>
+                      <small>{cadence(chore, WEEKDAY_NAMES)} · {memberById(members, chore.assigneeId) ? firstName(memberById(members, chore.assigneeId)!.name) : "Anyone"}</small>
+                    </span>
+                    <MemberAvatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
+                    <span class="task-points">+{chore.points}</span>
+                  </Label>
+                </li>
+              </ul>
             </div>
-            <ul class="task-list">
-              <li e:for={chore of dueOn(chores, ui.day)}>
-                <button type="button"
-                        class={["task", completionFor(completions, chore, ui.day) && "is-done"]}
-                        aria-pressed={!!completionFor(completions, chore, ui.day)}
-                        disabled={ui.day > today}
-                        onclick={() => onToggle(completions, chore, ui.day)}>
-                  <span class="task-box">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-                  </span>
-                  <span class="task-title">
-                    <span>{chore.title}</span>
-                    <small>{cadence(chore, WEEKDAY_NAMES)} · {memberById(members, chore.assigneeId) ? firstName(memberById(members, chore.assigneeId)!.name) : "Anyone"}</small>
-                  </span>
-                  <MemberAvatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
-                  <span class="task-points">+{chore.points}</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </section>
+          </TabsContent>
+        </Tabs>
 
         <section class="stack is-sm">
           <h2 class="text-md">The week at a glance</h2>
-          <div class="card chart-wrap">
+          <Table label="The week at a glance" class="card">
             <table class="chart">
               <thead>
                 <tr>
-                  <th></th>
-                  <th e:for={day of weekDays(week)} class={[day === today && "is-today"]}>{WEEKDAYS[weekdayIndex(day)]}</th>
+                  <TableHead><span class="sr-only">Chore</span></TableHead>
+                  <TableHead e:for={day of weekDays(week)} align="center" class={day === today ? "is-today" : ""}>{WEEKDAYS[weekdayIndex(day)]}</TableHead>
                 </tr>
               </thead>
               <tbody>
                 <tr e:for={chore of chores.sort(byCreated)}>
-                  <th scope="row">
+                  <TableHead scope="row">
                     <span class="row">
                       <MemberAvatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
                       {chore.title}
                     </span>
-                  </th>
-                  <td e:for={day of weekDays(week)}>
-                    <button e:if={isDue(chore, weekdayIndex(day))}
-                            type="button"
-                            class={[
-                              "cell",
-                              completionFor(completions, chore, day) && "is-done",
-                              !completionFor(completions, chore, day) && day < today && "is-missed",
-                            ]}
-                            aria-label={`${chore.title}, ${WEEKDAY_NAMES[weekdayIndex(day)]}`}
-                            aria-pressed={!!completionFor(completions, chore, day)}
-                            disabled={day > today}
-                            onclick={() => onToggle(completions, chore, day)}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-                    </button>
+                  </TableHead>
+                  <TableCell e:for={day of weekDays(week)} align="center">
+                    <Checkbox e:if={isDue(chore, weekdayIndex(day))}
+                              checked={!!completionFor(completions, chore, day)}
+                              invalid={!completionFor(completions, chore, day) && day < today}
+                              disabled={day > today}
+                              attrs={{ "aria-label": `${chore.title}, ${WEEKDAY_NAMES[weekdayIndex(day)]}` }}
+                              onCheckedChange={() => onToggle(completions, chore, day)} />
                     <span e:else class="cell-off">·</span>
-                  </td>
+                  </TableCell>
                 </tr>
               </tbody>
             </table>
-          </div>
+          </Table>
         </section>
 
-        <details class="manage card">
-          <summary class="card-head">Add or reassign chores</summary>
-          <div class="card-body stack is-lg">
-            <form class="chore-form" onsubmit={() => onAddChore(chores, draft)}>
-              <div class="field">
-                <label for="chore-title">Chore</label>
-                <input id="chore-title" value={draft.title} placeholder="Empty the dishwasher" required>
-              </div>
-              <div class="field">
-                <label for="chore-frequency">How often</label>
-                <select id="chore-frequency" value={draft.frequency}>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="chore-weekday">Day</label>
-                <select id="chore-weekday" value={draft.weekday} disabled={draft.frequency === "daily"}>
-                  <option e:for={[i, name] of WEEKDAY_NAMES.entries()} value={`${i}`}>{name}</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="chore-assignee">Who</label>
-                <select id="chore-assignee" value={draft.assigneeId}>
-                  <option value="">Anyone</option>
-                  <option e:for={m of members} value={m.id}>{firstName(m.name)}</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="chore-points">Points</label>
-                <input id="chore-points" type="number" min="1" max="20" value={draft.points}>
-              </div>
-              <button class="is-primary" type="submit">Add</button>
-            </form>
-            <p e:if={draft.error} class="callout is-danger">{draft.error}</p>
+        <Card class="manage">
+          <Collapsible>
+            <CollapsibleTrigger>
+              <Button variant="ghost" block class="manage-trigger">
+                <Icon name="chevron-right" class="collapsible-chevron is-right" />
+                Add or reassign chores
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent class="stack is-lg">
+                <form class="chore-form" onsubmit={() => onAddChore(chores, draft)}>
+                  <Field label="Chore">
+                    <Input value={draft.title} placeholder="Empty the dishwasher" required attrs={{ id: "chore-title" }} />
+                  </Field>
+                  <Field label="How often">
+                    <NativeSelect block value={draft.frequency} attrs={{ id: "chore-frequency" }}>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                    </NativeSelect>
+                  </Field>
+                  <Field label="Day">
+                    <NativeSelect block value={draft.weekday} disabled={draft.frequency === "daily"} attrs={{ id: "chore-weekday" }}>
+                      <option e:for={[i, name] of WEEKDAY_NAMES.entries()} value={`${i}`}>{name}</option>
+                    </NativeSelect>
+                  </Field>
+                  <Field label="Who">
+                    <NativeSelect block value={draft.assigneeId} attrs={{ id: "chore-assignee" }}>
+                      <option value="">Anyone</option>
+                      <option e:for={m of members} value={m.id}>{firstName(m.name)}</option>
+                    </NativeSelect>
+                  </Field>
+                  <Field label="Points">
+                    <NumberInput value={draft.points} min={1} max={20} buttons="end" />
+                  </Field>
+                  <Button variant="primary" type="submit">Add</Button>
+                </form>
+                <Alert e:if={draft.error} variant="danger" description={draft.error} />
 
-            <ul class="chore-rows">
-              <li e:for={chore of chores.sort(byCreated)} class="chore-row">
-                <span>{chore.title} <small>· {cadence(chore, WEEKDAY_NAMES)} · {chore.points} {chore.points === 1 ? "pt" : "pts"}</small></span>
-                <select class="is-sm" aria-label={`Who does ${chore.title}`} onchange={(e) => onAssign(chores, chore, e)}>
-                  <option value="" selected={!chore.assigneeId}>Anyone</option>
-                  <option e:for={m of members} value={m.id} selected={m.id === chore.assigneeId}>{firstName(m.name)}</option>
-                </select>
-                <button class="is-ghost is-sm is-icon" type="button" aria-label={`Remove ${chore.title}`} onclick={() => onRemoveChore(chores, chore)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </details>
+                <ul class="chore-rows">
+                  <li e:for={chore of chores.sort(byCreated)} class="chore-row">
+                    <span>{chore.title} <small>· {cadence(chore, WEEKDAY_NAMES)} · {chore.points} {chore.points === 1 ? "pt" : "pts"}</small></span>
+                    <NativeSelect size="sm"
+                                  block
+                                  value={chore.assigneeId ?? ""}
+                                  attrs={{ "aria-label": `Who does ${chore.title}` }}
+                                  onchange={(e) => onAssign(chores, chore, e)}>
+                      <option value="">Anyone</option>
+                      <option e:for={m of members} value={m.id}>{firstName(m.name)}</option>
+                    </NativeSelect>
+                    <AlertDialog title={`Remove "${chore.title}" and its history?`} size="sm">
+                      <Button slot="trigger" variant="ghost" size="sm" icon label={`Remove ${chore.title}`}><Icon name="x" /></Button>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction variant="danger" onclick={() => onRemoveChore(chores, chore)}>Remove</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialog>
+                  </li>
+                </ul>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
       </div>
     </Layout>
   </body>
 </html>
 
-<Leader (score: Score, leader: boolean, width: string)>
+<Leader (score: Score, leader: boolean, max: number)>
   <div class={["board-card card stack", leader && "is-leader"]}>
     <div class="board-top row">
       <MemberAvatar name={score.member.name} color={score.member.color} size="md" />
       <span class="board-name">{firstName(score.member.name)}<small>{score.done} done</small></span>
     </div>
     <div class="board-points">{score.points} <small>pts</small></div>
-    <div class="board-bar"><span style={{ width }}></span></div>
+    <Progress class="board-bar" size="sm" value={score.points} {max} attrs={{ "aria-label": `${firstName(score.member.name)}'s points` }} />
     <svg e:if={leader} class="board-crown" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-label="Leading this week"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg>
   </div>
 </Leader>
