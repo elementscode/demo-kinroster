@@ -2,6 +2,8 @@ import "./style.css";
 import { session, redirect } from "@elements/app";
 import { signout } from "#app/shared/services/auth";
 import { initials } from "#app/shared/lib/members";
+import { Avatar } from "@elements/ui/avatar";
+import { Button } from "@elements/ui/button";
 
 function onSignout() {
   signout();
@@ -62,8 +64,8 @@ function onSignout() {
         </nav>
 
         <div class="kin-me row">
-          <Avatar name={session.get("userName") ?? ""} {color} />
-          <button class="kin-signout is-ghost is-sm" type="button" onclick={() => onSignout()}>Sign out</button>
+          <MemberAvatar name={session.get("userName") ?? ""} {color} />
+          <Button class="kin-signout" variant="ghost" size="sm" onclick={() => onSignout()}>Sign out</Button>
         </div>
       </div>
     </header>
@@ -74,6 +76,6 @@ function onSignout() {
   </div>
 </Layout>
 
-<Avatar (name: string, color: string, size: string = "")>
-  <span class={["kin-avatar", `is-${color}`, size && `is-${size}`]} title={name}>{initials(name)}</span>
-</Avatar>
+<MemberAvatar (name: string, color: string, size: "sm" | "md" = "sm")>
+  <Avatar alt={name} fallback={initials(name)} {size} class={`kin-avatar is-${color || "none"}`} attrs={{ title: name }} />
+</MemberAvatar>

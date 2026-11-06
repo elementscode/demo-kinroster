@@ -92,28 +92,10 @@
   padding-block: var(--space-8) var(--space-16);
 }
 
-/* Member avatars: a coloured disc with initials. */
+/* Member avatars: the Avatar template, its initials in the member's hue. */
 
 .kin-avatar {
   --member-h: 150;
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: var(--avatar-size-sm);
-  height: var(--avatar-size-sm);
-  border-radius: var(--radius-full);
-  background: oklch(0.93 0.06 var(--member-h));
-  color: oklch(0.38 0.12 var(--member-h));
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-wide);
-  line-height: 1;
-}
-
-.kin-avatar.is-lg {
-  width: var(--avatar-size);
-  height: var(--avatar-size);
-  font-size: var(--text-xs);
 }
 
 .kin-avatar.is-green { --member-h: 150; }
@@ -123,14 +105,19 @@
 .kin-avatar.is-violet { --member-h: 300; }
 .kin-avatar.is-teal { --member-h: 195; }
 
+.kin-avatar:not(.is-none) .avatar-fallback {
+  background: oklch(0.93 0.06 var(--member-h));
+  color: oklch(0.38 0.12 var(--member-h));
+}
+
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .kin-avatar {
+  :root:not([data-theme="light"]) .kin-avatar:not(.is-none) .avatar-fallback {
     background: oklch(0.36 0.08 var(--member-h));
     color: oklch(0.92 0.06 var(--member-h));
   }
 }
 
-:root[data-theme="dark"] .kin-avatar {
+:root[data-theme="dark"] .kin-avatar:not(.is-none) .avatar-fallback {
   background: oklch(0.36 0.08 var(--member-h));
   color: oklch(0.92 0.06 var(--member-h));
 }

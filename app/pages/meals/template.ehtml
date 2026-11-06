@@ -1,6 +1,6 @@
 import "./style.css";
 import { LiveView } from "@elements/app";
-import { Layout, Avatar } from "#app/shared/templates/layout";
+import { Layout, MemberAvatar } from "#app/shared/templates/layout";
 import { Meal, addMealToList } from "#app/shared/services/meals";
 import { GroceryList } from "#app/shared/services/groceries";
 import { Member, firstName, memberById } from "#app/shared/lib/members";
@@ -172,7 +172,7 @@ function onAddToList(ui: Ui, meal: Meal) {
   <div class="meal-body">
     <button class="meal-title" type="button" onclick={() => onedit()}>{meal.title}</button>
     <span class="meal-cook row" e:if={memberById(members, meal.cookId)}>
-      <Avatar name={memberById(members, meal.cookId)!.name} color={memberById(members, meal.cookId)!.color} />
+      <MemberAvatar name={memberById(members, meal.cookId)!.name} color={memberById(members, meal.cookId)!.color} />
       {firstName(memberById(members, meal.cookId)!.name)} cooks
     </span>
     <ul class="meal-ingredients">

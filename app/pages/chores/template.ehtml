@@ -1,6 +1,6 @@
 import "./style.css";
 import { LiveView } from "@elements/app";
-import { Layout, Avatar } from "#app/shared/templates/layout";
+import { Layout, MemberAvatar } from "#app/shared/templates/layout";
 import { Chore, Completion, Frequency } from "#app/shared/services/chores";
 import { Member, firstName, memberById } from "#app/shared/lib/members";
 import { isDue, cadence } from "#app/shared/lib/chores";
@@ -189,7 +189,7 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
                     <span>{chore.title}</span>
                     <small>{cadence(chore, WEEKDAY_NAMES)} · {memberById(members, chore.assigneeId) ? firstName(memberById(members, chore.assigneeId)!.name) : "Anyone"}</small>
                   </span>
-                  <Avatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
+                  <MemberAvatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
                   <span class="task-points">+{chore.points}</span>
                 </button>
               </li>
@@ -211,7 +211,7 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
                 <tr e:for={chore of chores.sort(byCreated)}>
                   <th scope="row">
                     <span class="row">
-                      <Avatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
+                      <MemberAvatar e:if={memberById(members, chore.assigneeId)} name={memberById(members, chore.assigneeId)!.name} color={memberById(members, chore.assigneeId)!.color} />
                       {chore.title}
                     </span>
                   </th>
@@ -295,7 +295,7 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
 <Leader (score: Score, leader: boolean, width: string)>
   <div class={["board-card card stack", leader && "is-leader"]}>
     <div class="board-top row">
-      <Avatar name={score.member.name} color={score.member.color} size="lg" />
+      <MemberAvatar name={score.member.name} color={score.member.color} size="md" />
       <span class="board-name">{firstName(score.member.name)}<small>{score.done} done</small></span>
     </div>
     <div class="board-points">{score.points} <small>pts</small></div>
