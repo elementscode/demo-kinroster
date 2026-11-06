@@ -38,10 +38,6 @@
   text-overflow: ellipsis;
 }
 
-.person.is-pending .kin-avatar {
-  background: var(--bg-muted);
-  color: var(--ink-dim);
-}
 
 .invite-form {
   display: grid;
