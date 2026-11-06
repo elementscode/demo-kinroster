@@ -158,7 +158,7 @@ function onRemoveChore(chores: LiveView<Chore>, chore: Chore) {
                   max={topPoints(scores(members, completions, week))} />
         </section>
 
-        <Tabs value={ui.day} variant="segmented" class="days-tabs">
+        <Tabs value={ui.day} variant="segmented" block class="days-tabs">
           <TabsList label="Day">
             <TabsTrigger e:for={day of weekDays(week)}
                          value={day}
