@@ -1,6 +1,10 @@
 /* The household shell: a header with the nav on wide screens, a tab bar
    pinned to the bottom on phones. */
 
+:root {
+  --kin-toast-bottom: var(--space-8);
+}
+
 .kin-header {
   position: sticky;
   top: 0;
@@ -125,6 +129,10 @@
 /* Phones: the nav moves to a tab bar at the thumb. */
 
 @media (max-width: 48rem) {
+  :root {
+    --kin-toast-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
+  }
+
   /* A backdrop-filter would make the header the containing block of the
      fixed tab bar inside it, pinning the bar to the header. */
   .kin-header {

@@ -4,6 +4,7 @@ import { signout } from "#app/shared/services/auth";
 import { initials } from "#app/shared/lib/members";
 import { Avatar } from "@elements/ui/avatar";
 import { Button } from "@elements/ui/button";
+import { Toaster } from "@elements/ui/toast";
 
 function onSignout() {
   signout();
@@ -73,6 +74,11 @@ function onSignout() {
     <main class="kin-main app-main">
       <slot/>
     </main>
+
+    <Toaster position="bottom-center"
+             richColors
+             offset={{ bottom: "var(--kin-toast-bottom)" }}
+             mobileOffset={{ bottom: "var(--kin-toast-bottom)" }} />
   </div>
 </Layout>
 

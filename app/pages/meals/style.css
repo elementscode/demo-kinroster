@@ -18,11 +18,6 @@
   color: var(--ink-soft);
 }
 
-.meals-target select {
-  width: auto;
-  padding-inline-end: var(--space-8);
-}
-
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -79,23 +74,14 @@
 }
 
 .meal-title {
-  width: 100%;
+  justify-content: flex-start;
   height: auto;
   padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
   text-align: left;
   white-space: normal;
   font-size: var(--text-md);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-snug);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.meal-title:hover {
-  color: var(--accent-deep);
 }
 
 .meal-cook {
@@ -131,10 +117,6 @@
   padding-top: 0;
 }
 
-.meal-foot button {
-  width: 100%;
-}
-
 .meal-added {
   gap: var(--space-1-5);
   justify-content: center;
@@ -145,23 +127,8 @@
 
 .meal-empty {
   flex: 1;
-  display: grid;
-  place-items: center;
   margin: var(--space-3);
-  border: 1.5px dashed var(--rule);
-  border-radius: var(--radius-lg);
-  background: none;
-  box-shadow: none;
-  height: auto;
-  color: var(--ink-dim);
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-}
-
-.meal-empty:hover {
-  color: var(--accent-deep);
-  border-color: var(--accent-edge);
-  background: var(--accent-soft);
+  padding: var(--space-2);
 }
 
 .meal-edit {
@@ -169,34 +136,13 @@
   padding: var(--space-3);
 }
 
-.meal-edit textarea {
-  min-height: 7.5rem;
-  font-size: var(--text-sm);
-}
-
 .meal-edit .row {
+  flex-wrap: wrap;
   gap: var(--space-1-5);
 }
 
-.meal-edit .row button {
-  flex: 1;
-}
-
-.meals-flash {
-  position: fixed;
-  left: 50%;
-  bottom: var(--space-8);
-  z-index: var(--z-toast);
-  transform: translateX(-50%);
-  box-shadow: var(--shadow-lg);
-  animation: flash-in var(--duration-slow) var(--ease-out);
-}
-
-@keyframes flash-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 8px);
-  }
+.meal-edit .row .button {
+  flex: 1 1 auto;
 }
 
 @media (max-width: 72rem) {
@@ -220,9 +166,5 @@
 
   .meals-head h1 {
     font-size: var(--text-2xl);
-  }
-
-  .meals-flash {
-    bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
   }
 }

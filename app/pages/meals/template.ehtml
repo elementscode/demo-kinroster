@@ -5,6 +5,14 @@ import { Meal, addMealToList } from "#app/shared/services/meals";
 import { GroceryList } from "#app/shared/services/groceries";
 import { Member, firstName, memberById } from "#app/shared/lib/members";
 import { ingredientLines } from "#app/shared/lib/aisles";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { Empty } from "@elements/ui/empty";
+import { Icon } from "@elements/ui/icon";
+import { Input } from "@elements/ui/input";
+import { NativeSelect } from "@elements/ui/native-select";
+import { Textarea } from "@elements/ui/textarea";
+import { toast } from "@elements/ui/toast";
 import { WEEKDAYS, addDays, weekDays, weekdayIndex, dayOfMonth, shortDate, weekLabel } from "#app/shared/lib/dates";
 
 /** The one day being edited, and the text so far. */
@@ -19,7 +27,6 @@ interface Edit {
 interface Ui {
   listId: string;
   busy: string;
-  flash: string;
 }
 
 function mealOn(meals: LiveView<Meal>, day: string): Meal | undefined {
@@ -75,15 +82,14 @@ function onAddToList(ui: Ui, meal: Meal) {
   try {
     let result = addMealToList(meal.id, ui.listId);
 
-    ui.flash = result.added === 0
+    toast.success(result.added === 0
       ? `Everything for ${meal.title} is already on ${result.listName}`
-      : `Added ${result.added} item${result.added === 1 ? "" : "s"} to ${result.listName}` + (result.skipped ? ` (${result.skipped} already there)` : "");
+      : `Added ${result.added} item${result.added === 1 ? "" : "s"} to ${result.listName}` + (result.skipped ? ` (${result.skipped} already there)` : ""));
   } catch (err: any) {
-    ui.flash = err.message;
+    toast.error(err.message);
   }
 
   ui.busy = "";
-  setTimeout(() => ui.flash = "", 3200);
 }
 
 <html lang="en" class="page-meals" (
@@ -94,7 +100,7 @@ function onAddToList(ui: Ui, meal: Meal) {
   lists: GroceryList[],
   week: string,
   today: string,
-  private ui: Ui = { listId: lists[0]?.id ?? "", busy: "", flash: "" },
+  private ui: Ui = { listId: lists[0]?.id ?? "", busy: "" },
   private edit: Edit = { day: "", title: "", cookId: "", ingredients: "", error: "" },
 )>
   <head>
@@ -107,20 +113,14 @@ function onAddToList(ui: Ui, meal: Meal) {
           <div class="row" style={{ gap: "var(--space-4)", "flex-wrap": "wrap" }}>
             <h1>Dinners</h1>
             <nav class="row" aria-label="Week" style={{ gap: "var(--space-1)" }}>
-              <a class="button is-ghost is-sm is-icon" href={`/meals?week=${addDays(week, -7)}`} aria-label="Previous week">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-              </a>
-              <span class="pill">{weekLabel(week)} · {shortDate(week)} – {shortDate(addDays(week, 6))}</span>
-              <a class="button is-ghost is-sm is-icon" href={`/meals?week=${addDays(week, 7)}`} aria-label="Next week">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-              </a>
+              <Button href={`/meals?week=${addDays(week, -7)}`} variant="ghost" size="sm" icon label="Previous week"><Icon name="chevron-left" /></Button>
+              <Badge variant="secondary">{weekLabel(week)} · {shortDate(week)} – {shortDate(addDays(week, 6))}</Badge>
+              <Button href={`/meals?week=${addDays(week, 7)}`} variant="ghost" size="sm" icon label="Next week"><Icon name="chevron-right" /></Button>
             </nav>
           </div>
           <label class="meals-target row" e:if={lists.length > 0}>
             Ingredients go to
-            <select class="is-sm" value={ui.listId}>
-              <option e:for={list of lists} value={list.id}>{list.name}</option>
-            </select>
+            <NativeSelect size="sm" value={ui.listId} options={lists.map((list) => ({ value: list.id, label: list.name }))} />
           </label>
         </div>
 
@@ -131,17 +131,20 @@ function onAddToList(ui: Ui, meal: Meal) {
               <span class="meal-date">{shortDate(day)}</span>
             </header>
 
-            <form e:if={edit.day === day} class="meal-edit stack" onsubmit={() => onSave(meals, edit)}>
-              <input value={edit.title} placeholder="What's for dinner?" aria-label="Dinner" oninsert={(e) => (e.target as HTMLInputElement).focus()} required>
-              <select class="is-sm" value={edit.cookId} aria-label="Cook">
+            <form e:if={edit.day === day}
+                  class="meal-edit stack"
+                  oninsert={(e) => (e.target as HTMLElement).querySelector("input")?.focus()}
+                  onsubmit={() => onSave(meals, edit)}>
+              <Input value={edit.title} placeholder="What's for dinner?" required attrs={{ "aria-label": "Dinner" }} />
+              <NativeSelect size="sm" block value={edit.cookId} attrs={{ "aria-label": "Cook" }}>
                 <option value="">No cook yet</option>
                 <option e:for={m of members} value={m.id}>{firstName(m.name)} cooks</option>
-              </select>
-              <textarea value={edit.ingredients} placeholder={"Ingredients, one per line\n2 lb chicken thighs\n1 bunch cilantro"} aria-label="Ingredients"></textarea>
+              </NativeSelect>
+              <Textarea value={edit.ingredients} size="sm" rows={5} placeholder={"Ingredients, one per line\n2 lb chicken thighs\n1 bunch cilantro"} attrs={{ "aria-label": "Ingredients" }} />
               <p e:if={edit.error} class="text-sm" style={{ color: "var(--danger)" }}>{edit.error}</p>
               <div class="row">
-                <button class="is-sm is-ghost" type="button" onclick={() => onClear(meals, edit)}>{mealOn(meals, day) ? "Remove" : "Cancel"}</button>
-                <button class="is-sm is-primary" type="submit">Save</button>
+                <Button size="sm" variant="ghost" onclick={() => onClear(meals, edit)}>{mealOn(meals, day) ? "Remove" : "Cancel"}</Button>
+                <Button size="sm" variant="primary" type="submit">Save</Button>
               </div>
             </form>
 
@@ -152,11 +155,12 @@ function onAddToList(ui: Ui, meal: Meal) {
                       canAdd={lists.length > 0}
                       onedit={() => onEdit(edit, day, mealOn(meals, day))} />
 
-            <button e:else class="meal-empty" type="button" onclick={() => onEdit(edit, day, undefined)}>+ Plan dinner</button>
+            <Empty e:else variant="outline" class="meal-empty">
+              <Button variant="ghost" onclick={() => onEdit(edit, day, undefined)}>+ Plan dinner</Button>
+            </Empty>
           </article>
         </div>
 
-        <p e:if={ui.flash} class="meals-flash callout is-success" role="status">{ui.flash}</p>
       </div>
     </Layout>
   </body>
@@ -170,7 +174,7 @@ function onAddToList(ui: Ui, meal: Meal) {
   onedit: () => void,
 )>
   <div class="meal-body">
-    <button class="meal-title" type="button" onclick={() => onedit()}>{meal.title}</button>
+    <Button class="meal-title" variant="link" onclick={() => onedit()}>{meal.title}</Button>
     <span class="meal-cook row" e:if={memberById(members, meal.cookId)}>
       <MemberAvatar name={memberById(members, meal.cookId)!.name} color={memberById(members, meal.cookId)!.color} />
       {firstName(memberById(members, meal.cookId)!.name)} cooks
@@ -180,12 +184,13 @@ function onAddToList(ui: Ui, meal: Meal) {
     </ul>
   </div>
   <div class="meal-foot stack is-xs" e:if={canAdd && ingredientLines(meal.ingredients).length > 0}>
-    <button class={["is-sm", !meal.addedToListAt && "is-primary", ui.busy === meal.id && "is-loading"]}
-            type="button"
-            disabled={ui.busy === meal.id}
+    <Button size="sm"
+            block
+            variant={meal.addedToListAt ? "outline" : "primary"}
+            loading={ui.busy === meal.id}
             onclick={() => onAddToList(ui, meal)}>
       {meal.addedToListAt ? "Add again" : "Add to list"}
-    </button>
+    </Button>
     <span class="meal-added row" e:if={meal.addedToListAt}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
       On the list
