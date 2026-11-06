@@ -6,6 +6,8 @@
 
 Grocery lists sorted by aisle, chores with a weekly points tally, and a dinner plan that fills the list, live on every phone.
 
+Kinroster uses the `playful` theme from @elements/ui.
+
 [Run this app on your machine](https://elements.dev/demos/01a0f3d7-cb1c-79c6-8b96-13f89b0ef8e3). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## How it's built
