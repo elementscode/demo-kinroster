@@ -4,6 +4,16 @@ import { Layout } from "#app/shared/templates/layout";
 import { GroceryList, GroceryItem } from "#app/shared/services/groceries";
 import { AISLES, aisleLabel, guessAisle } from "#app/shared/lib/aisles";
 import { firstName } from "#app/shared/lib/members";
+import { AlertDialog, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@elements/ui/alert-dialog";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { Checkbox } from "@elements/ui/checkbox";
+import { Empty } from "@elements/ui/empty";
+import { Icon } from "@elements/ui/icon";
+import { Input } from "@elements/ui/input";
+import { Label } from "@elements/ui/label";
+import { NativeSelect } from "@elements/ui/native-select";
+import { Progress } from "@elements/ui/progress";
 
 interface Draft {
   quantity: string;
@@ -94,10 +104,6 @@ function onCreateList(lists: LiveView<GroceryList>, form: NewList) {
 }
 
 function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
-  if (!confirm(`Delete "${list.name}" and everything on it?`)) {
-    return;
-  }
-
   lists.delete(list);
   redirect("/lists");
 }
@@ -123,43 +129,55 @@ function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
                href={`/lists/${list.id}`}
                class={["lists-tab", list.id === listId && "is-active"]}>{list.name}</a>
 
-            <form e:if={newList.open} class="lists-newlist row" onsubmit={() => onCreateList(lists, newList)}>
-              <input class="is-sm" value={newList.name} placeholder="List name" aria-label="New list name" oninsert={(e) => (e.target as HTMLInputElement).focus()} required>
-              <button class="is-sm is-primary" type="submit">Create</button>
-              <button class="is-sm is-ghost" type="button" onclick={() => newList.open = false}>Cancel</button>
+            <form e:if={newList.open}
+                  class="lists-newlist row"
+                  oninsert={(e) => (e.target as HTMLElement).querySelector("input")?.focus()}
+                  onsubmit={() => onCreateList(lists, newList)}>
+              <Input size="sm" value={newList.name} placeholder="List name" required attrs={{ "aria-label": "New list name" }} />
+              <Button size="sm" variant="primary" type="submit">Create</Button>
+              <Button size="sm" variant="ghost" onclick={() => newList.open = false}>Cancel</Button>
             </form>
-            <button e:else class="is-sm is-ghost" type="button" onclick={() => newList.open = true}>+ New list</button>
+            <Button e:else size="sm" variant="ghost" onclick={() => newList.open = true}>+ New list</Button>
           </nav>
 
           <div class="lists-head row">
             <h1>{lists.get(listId)?.name}</h1>
-            <button e:if={lists.length > 1}
-                    class="is-sm is-ghost"
-                    type="button"
-                    onclick={() => onDeleteList(lists, lists.get(listId)!)}>Delete list</button>
+            <AlertDialog e:if={lists.length > 1}
+                         title={`Delete "${lists.get(listId)?.name}" and everything on it?`}
+                         size="sm">
+              <Button slot="trigger" size="sm" variant="ghost">Delete list</Button>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction variant="danger" onclick={() => onDeleteList(lists, lists.get(listId)!)}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialog>
           </div>
 
           <div class="lists-progress row" e:if={items.length > 0}>
             <span>{items.filter((i) => !i.done).length} to get</span>
-            <progress max={items.length} value={items.filter((i) => i.done).length}></progress>
+            <Progress class="lists-progress-bar"
+                      size="sm"
+                      max={items.length}
+                      value={items.filter((i) => i.done).length}
+                      attrs={{ "aria-label": "In the cart" }} />
             <span>{items.filter((i) => i.done).length} in the cart</span>
           </div>
         </div>
 
         <form class="lists-add" onsubmit={() => onAdd(items, draft)}>
-          <input class="lists-add-qty" value={draft.quantity} placeholder="Qty" aria-label="Quantity">
-          <input class="lists-add-name" value={draft.name} placeholder="Add an item…" aria-label="Item" autocomplete="off" required>
-          <select value={draft.aisle} aria-label="Aisle">
+          <Input class="lists-add-qty" value={draft.quantity} placeholder="Qty" attrs={{ "aria-label": "Quantity" }} />
+          <Input class="lists-add-name" value={draft.name} placeholder="Add an item…" required attrs={{ "aria-label": "Item", autocomplete: "off" }} />
+          <NativeSelect class="lists-add-aisle" block value={draft.aisle} attrs={{ "aria-label": "Aisle" }}>
             <option value="">Auto · {aisleLabel(guessAisle(draft.name))}</option>
             <option e:for={a of AISLES} value={a.key}>{a.label}</option>
-          </select>
-          <button class="is-primary" type="submit">Add</button>
+          </NativeSelect>
+          <Button class="lists-add-submit" variant="primary" type="submit">Add</Button>
         </form>
 
-        <div class="lists-empty card" e:if={items.length === 0}>
-          <p><strong>Nothing on this list yet.</strong></p>
-          <p class="text-sm">Add what you need above, or send a dinner's ingredients here from the meal plan.</p>
-        </div>
+        <Empty e:if={items.length === 0}
+               class="card"
+               title="Nothing on this list yet."
+               description="Add what you need above, or send a dinner's ingredients here from the meal plan." />
 
         <section e:for={group of toGet(items)} class="aisle card">
           <div class="aisle-head row">
@@ -174,7 +192,7 @@ function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
         <section class="aisle cart card" e:if={inCart(items).length > 0}>
           <div class="aisle-head row">
             <h2>In the cart · {inCart(items).length}</h2>
-            <button class="is-sm is-ghost" type="button" onclick={() => onClearCart(items)}>Clear</button>
+            <Button size="sm" variant="ghost" onclick={() => onClearCart(items)}>Clear</Button>
           </div>
           <ul class="items">
             <ItemRow e:for={item of inCart(items)} {items} {item} />
@@ -187,22 +205,16 @@ function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
 
 <ItemRow (items: LiveView<GroceryItem>, item: GroceryItem)>
   <li class={["item", item.done && "is-done"]}>
-    <button class="item-check" type="button" aria-pressed={item.done} onclick={() => onToggle(items, item)}>
-      <span class="item-box">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M5 12.5l4.5 4.5L19 7.5"/>
-        </svg>
-      </span>
+    <Label class="item-check">
+      <Checkbox class="item-box" checked={item.done} onCheckedChange={() => onToggle(items, item)} />
       <span class="item-name">
         <span class="item-title">{item.name}</span>
         <small e:if={item.addedBy}>{firstName(item.addedBy)}</small>
       </span>
-      <span e:if={item.quantity} class="item-qty pill">{item.quantity}</span>
-    </button>
-    <button class="item-remove is-ghost is-sm is-icon" type="button" aria-label={`Remove ${item.name}`} onclick={() => onRemove(items, item)}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <path d="M6 6l12 12M18 6L6 18"/>
-      </svg>
-    </button>
+      <Badge e:if={item.quantity} variant="secondary" class="item-qty">{item.quantity}</Badge>
+    </Label>
+    <Button class="item-remove" variant="ghost" size="sm" icon label={`Remove ${item.name}`} onclick={() => onRemove(items, item)}>
+      <Icon name="x" />
+    </Button>
   </li>
 </ItemRow>
