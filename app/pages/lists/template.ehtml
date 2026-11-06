@@ -205,14 +205,14 @@ function onDeleteList(lists: LiveView<GroceryList>, list: GroceryList) {
 <ItemRow (items: LiveView<GroceryItem>, item: GroceryItem)>
   <li class={["item", item.done && "is-done"]}>
     <Label class="item-check">
-      <Checkbox class="item-box" checked={item.done} onCheckedChange={() => onToggle(items, item)} />
+      <Checkbox checked={item.done} onCheckedChange={() => onToggle(items, item)} />
       <span class="item-name">
         <span class="item-title">{item.name}</span>
         <small e:if={item.addedBy}>{firstName(item.addedBy)}</small>
       </span>
       <Badge e:if={item.quantity} variant="secondary" class="item-qty">{item.quantity}</Badge>
     </Label>
-    <Button class="item-remove" variant="ghost" size="sm" icon label={`Remove ${item.name}`} onclick={() => onRemove(items, item)}>
+    <Button variant="ghost" size="sm" icon label={`Remove ${item.name}`} onclick={() => onRemove(items, item)}>
       <Icon name="x" />
     </Button>
   </li>
